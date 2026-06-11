@@ -1,0 +1,287 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart To-Do List</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    background:#f4f4f4;
+    margin:0;
+    padding:20px;
+}
+
+.container{
+    max-width:700px;
+    margin:auto;
+    background:white;
+    padding:20px;
+    border-radius:15px;
+    box-shadow:0 0 10px rgba(0,0,0,0.2);
+}
+
+h1{
+    text-align:center;
+}
+
+input{
+    padding:10px;
+    margin:5px;
+}
+
+button{
+    padding:10px;
+    margin:5px;
+    cursor:pointer;
+    border:none;
+    border-radius:5px;
+}
+
+#addBtn{
+    background:green;
+    color:white;
+}
+
+#clearBtn{
+    background:red;
+    color:white;
+}
+
+.filter-btn{
+    background:#0077cc;
+    color:white;
+}
+
+ul{
+    list-style:none;
+    padding:0;
+}
+
+li{
+    background:#f0f8ff;
+    border-left:5px solid #0077cc;
+    margin-top:10px;
+    padding:10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border-radius:5px;
+}
+
+.completed{
+    text-decoration:line-through;
+    color:gray;
+}
+
+.stats{
+    margin:15px 0;
+    font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Smart To-Do List</h1>
+
+<input type="text" id="taskInput" placeholder="Enter Task">
+<input type="date" id="taskDate">
+
+<button id="addBtn">Add Task</button>
+<button id="clearBtn">Clear All</button>
+
+<div class="stats">
+    Total: <span id="total">0</span> |
+    Completed: <span id="completed">0</span> |
+    Pending: <span id="pending">0</span>
+</div>
+
+<button class="filter-btn" data-filter="all">All</button>
+<button class="filter-btn" data-filter="active">Active</button>
+<button class="filter-btn" data-filter="completed">Completed</button>
+
+<ul id="taskList"></ul>
+
+</div>
+
+<script>
+
+let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+let currentFilter = "all";
+
+const taskInput = document.getElementById("taskInput");
+const taskDate = document.getElementById("taskDate");
+const taskList = document.getElementById("taskList");
+
+function saveTasks(){
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+}
+
+function updateCounts(){
+
+    document.getElementById("total").textContent =
+    tasks.length;
+
+    document.getElementById("completed").textContent =
+    tasks.filter(task => task.completed).length;
+
+    document.getElementById("pending").textContent =
+    tasks.filter(task => !task.completed).length;
+}
+
+function renderTasks(){
+
+    taskList.innerHTML = "";
+
+    let filteredTasks = tasks;
+
+    if(currentFilter === "active"){
+        filteredTasks =
+        tasks.filter(task => !task.completed);
+    }
+
+    if(currentFilter === "completed"){
+        filteredTasks =
+        tasks.filter(task => task.completed);
+    }
+
+    filteredTasks.forEach((task,index)=>{
+
+        const li = document.createElement("li");
+
+        li.innerHTML = `
+            <div>
+                <span class="${task.completed ? 'completed' : ''}">
+                    ${task.text}
+                </span>
+                <br>
+                <small>Due: ${task.date || "No Date"}</small>
+            </div>
+
+            <div>
+                <button onclick="toggleTask(${index})">
+                    ${task.completed ? "Undo" : "Done"}
+                </button>
+
+                <button onclick="editTask(${index})">
+                    Edit
+                </button>
+
+                <button onclick="deleteTask(${index})">
+                    Delete
+                </button>
+            </div>
+        `;
+
+        taskList.appendChild(li);
+    });
+
+    updateCounts();
+}
+
+function addTask(){
+
+    const text = taskInput.value.trim();
+
+    if(text === ""){
+        alert("Enter a task");
+        return;
+    }
+
+    tasks.push({
+        text:text,
+        date:taskDate.value,
+        completed:false
+    });
+
+    taskInput.value = "";
+    taskDate.value = "";
+
+    saveTasks();
+    renderTasks();
+}
+
+function toggleTask(index){
+
+    tasks[index].completed =
+    !tasks[index].completed;
+
+    saveTasks();
+    renderTasks();
+}
+
+function editTask(index){
+
+    const newText =
+    prompt("Edit Task", tasks[index].text);
+
+    if(newText){
+
+        tasks[index].text = newText;
+
+        saveTasks();
+        renderTasks();
+    }
+}
+
+function deleteTask(index){
+
+    tasks.splice(index,1);
+
+    saveTasks();
+    renderTasks();
+}
+
+function filterTasks(filter){
+
+    currentFilter = filter;
+
+    renderTasks();
+}
+
+document.getElementById("addBtn")
+.addEventListener("click", addTask);
+
+taskInput.addEventListener("keypress", function(e){
+
+    if(e.key === "Enter"){
+        addTask();
+    }
+
+});
+
+document.getElementById("clearBtn")
+.addEventListener("click", ()=>{
+
+    if(confirm("Delete all tasks?")){
+
+        tasks = [];
+
+        saveTasks();
+        renderTasks();
+    }
+});
+
+document.querySelectorAll("[data-filter]")
+.forEach(button => {
+
+    button.addEventListener("click", ()=>{
+
+        filterTasks(button.dataset.filter);
+
+    });
+
+});
+
+renderTasks();
+
+</script>
+
+</body>
+</html>
+
